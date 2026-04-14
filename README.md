@@ -1,70 +1,73 @@
-# Getting Started with Create React App
+# FocusFlow Study Planner
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+FocusFlow is an ADHD-friendly study planning web application built to reduce the friction of getting started. Instead of behaving like a generic to-do list, it helps students capture tasks quickly, narrow attention to a few priorities, and move into a countdown-based focus session with a built-in break flow.
 
-## Available Scripts
+## What The App Does
 
-In the project directory, you can run:
+- Quick task capture with only the essential fields
+- Course or project tagging
+- A smallest-next-step field to make large work easier to start
+- Energy-based task lengths:
+  - `5-minute start`
+  - `25-minute focus`
+  - `45-minute deep focus`
+- Today Focus list that keeps only a small number of active priorities visible
+- Full-screen focus mode with a large Pomodoro-style countdown
+- Break mode after a work round, with optional auto-start
+- Lightweight settings for timer durations and break behavior
+- Status tracking with `To Do`, `In Progress`, and `Done`
+- Deadline awareness with overdue and due-this-week summaries
+- Bilingual UI with Chinese and English switching
+- Local persistence using browser storage
 
-### `npm start`
+## Why It Exists
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Many students, especially students with ADHD traits or attention regulation difficulties, struggle with:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- starting large tasks
+- keeping attention on only one task
+- avoiding overwhelming task lists
+- maintaining momentum after a focus round ends
 
-### `npm test`
+FocusFlow responds to that with a lower-friction interaction model:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- fewer always-visible tasks
+- a direct transition from task selection to focus mode
+- a built-in rest cycle after work
+- reduced explanatory copy on the main screen
+- supportive language instead of punitive urgency
 
-### `npm run build`
+## Tech Stack
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- React
+- Create React App
+- Custom CSS
+- LocalStorage for task and settings persistence
+- Browser Notification API for lightweight reminders
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Run Locally
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm install
+npm start
+```
 
-### `npm run eject`
+Open [http://localhost:3000](http://localhost:3000).
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Test
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm test -- --watch=false
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Build
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm run build
+```
 
-## Learn More
+## Coursework Notes
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+For a more submission-oriented explanation of the problem definition, target user, design rationale, and how the app satisfies the project requirement, see:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- [COURSEWORK_REPORT.md](/Users/eleanorchow/Desktop/todo-app/COURSEWORK_REPORT.md)
