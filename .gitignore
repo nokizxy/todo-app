@@ -22,3 +22,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# coursework/submission artifacts kept off GitHub
+COURSEWORK_REPORT.md
+Post_Project_*
+项目介绍_*.md
+项目开发过程记录.md
+提交文件清单.md
+截图*.png
+截屏*.png
+screenshot-*.png
+scripts/
+tmp_ppt_assets/
