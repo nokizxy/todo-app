@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import './App.css';
 
 const STORAGE_KEY = 'focusflow-study-planner.tasks.v1';
 const LEGACY_STORAGE_KEY = 'tasks';
 const LANGUAGE_KEY = 'focusflow-study-planner.language';
 const SETTINGS_KEY = 'focusflow-study-planner.settings.v1';
+const SESSION_KEY = 'focusflow-study-planner.sessions.v1';
 
 const translations = {
   zh: {
@@ -22,6 +23,41 @@ const translations = {
       progress: { label: '进行中' },
       week: { label: '本周截止' },
       overdue: { label: '已逾期' },
+      sessions: { label: '今日专注' },
+      minutes: { label: '累计分钟' },
+    },
+    templatesTitle: '从模板开始',
+    templates: {
+      paper: {
+        label: '写论文',
+        title: '完成论文段落',
+        course: '课程论文',
+        nextStep: '打开文档，先写出 3 个小标题。',
+      },
+      presentation: {
+        label: '做展示',
+        title: '准备课堂展示',
+        course: '课堂展示',
+        nextStep: '先创建 PPT 文件，写出 3 页大纲。',
+      },
+      reading: {
+        label: '读文献',
+        title: '阅读一篇文献',
+        course: '文献阅读',
+        nextStep: '打开材料，标记 3 个关键词和 1 句重要引用。',
+      },
+      exam: {
+        label: '复习考试',
+        title: '复习考试章节',
+        course: '考试复习',
+        nextStep: '先看目录，列出 5 个不熟的概念。',
+      },
+      coding: {
+        label: '写代码',
+        title: '推进代码项目',
+        course: '代码项目',
+        nextStep: '打开项目，先运行一次测试并记录第一个问题。',
+      },
     },
     quickAddEyebrow: '快速输入',
     quickAddTitleCreate: '先抓住任务，再慢慢整理',
@@ -35,6 +71,7 @@ const translations = {
       dueDate: '截止日期',
       nextStep: '最小下一步',
       nextStepPlaceholder: '打开文章，标两段引用，再写一句摘要。',
+      nextStepAssist: '已根据任务自动建议，可自行修改。',
       effort: '所需精力',
       todayFocus: '加入今日聚焦',
     },
@@ -54,6 +91,8 @@ const translations = {
     focusTitle: '只面对接下来要开始的几件事',
     focusEmptyTitle: '还没有聚焦任务',
     focusEmptyText: '先添加一条任务，并写下一个足够小的下一步，界面会自动保持简洁。',
+    focusEmptyAction: '添加一个小任务',
+    focusEmptyTemplate: '用写论文模板',
     defaultCourse: '通用学习',
     focusFallback: '先补一个更小的下一步，让开始变得更容易。',
     actions: {
@@ -76,9 +115,14 @@ const translations = {
       running: '专注中',
       paused: '已暂停',
       finished: '本轮完成',
+      finishedTitle: '这一轮已经完成',
+      finishedHint: '现在不用马上想太多，选一个最顺手的下一步就好。',
       pause: '暂停',
       resume: '继续',
       reset: '重新开始',
+      anotherRound: '再来一轮',
+      markTaskDone: '标记任务完成',
+      restNow: '休息一下',
       close: '返回规划器',
       completeAndClose: '完成并退出',
       noTask: '这条任务没有写下一步，可以先给自己一个很小的启动动作。',
@@ -116,7 +160,20 @@ const translations = {
       focusMinutes: '专注时长',
       deepMinutes: '深度时长',
       breakMinutes: '休息时长',
-      autoStartBreak: '专注结束后自动进入休息',
+      autoStartBreak: '专注结束后优先推荐休息',
+    },
+    insights: {
+      eyebrow: '专注记录',
+      title: '今天做过的事看得见',
+      export: '导出今日记录',
+      empty: '完成一轮专注后，这里会自动记录任务和时间。',
+      copied: '今日专注记录已复制，可以粘贴到开发过程记录或作业说明中。',
+      downloaded: '浏览器已下载今日专注记录。',
+      exportEmpty: '今天还没有专注记录，先完成一轮再导出。',
+      weekTitle: '7 天专注趋势',
+      weekHint: '只显示完成的专注轮次，帮助你看到真实投入。',
+      minutes: '分钟',
+      sessions: '轮',
     },
     breakMode: {
       title: '休息一下',
@@ -142,6 +199,41 @@ const translations = {
       progress: { label: 'In progress' },
       week: { label: 'Due this week' },
       overdue: { label: 'Overdue' },
+      sessions: { label: 'Focused today' },
+      minutes: { label: 'Minutes logged' },
+    },
+    templatesTitle: 'Start from a template',
+    templates: {
+      paper: {
+        label: 'Paper',
+        title: 'Finish a paper section',
+        course: 'Course paper',
+        nextStep: 'Open the document and write 3 small section headings first.',
+      },
+      presentation: {
+        label: 'Presentation',
+        title: 'Prepare a class presentation',
+        course: 'Class presentation',
+        nextStep: 'Create the slide file and draft the first 3 slide titles.',
+      },
+      reading: {
+        label: 'Reading',
+        title: 'Read one source',
+        course: 'Reading',
+        nextStep: 'Open the source, mark 3 keywords, and save 1 useful quote.',
+      },
+      exam: {
+        label: 'Exam review',
+        title: 'Review an exam chapter',
+        course: 'Exam review',
+        nextStep: 'Scan the chapter outline and list 5 concepts that feel unclear.',
+      },
+      coding: {
+        label: 'Coding',
+        title: 'Move the coding project forward',
+        course: 'Coding project',
+        nextStep: 'Open the project, run the tests once, and note the first issue.',
+      },
     },
     quickAddEyebrow: 'Quick capture',
     quickAddTitleCreate: 'Catch the task before it disappears',
@@ -155,6 +247,7 @@ const translations = {
       dueDate: 'Due date',
       nextStep: 'Smallest next step',
       nextStepPlaceholder: 'Open the article, highlight two quotes, and write one summary sentence.',
+      nextStepAssist: 'Auto-suggested from the task. You can edit it.',
       effort: 'Energy needed',
       todayFocus: 'Add to today focus',
     },
@@ -175,6 +268,8 @@ const translations = {
     focusEmptyTitle: 'No focus tasks yet',
     focusEmptyText:
       'Add one task with a very small next step. The interface is intentionally designed to stay quiet.',
+    focusEmptyAction: 'Add a tiny task',
+    focusEmptyTemplate: 'Use paper template',
     defaultCourse: 'General study',
     focusFallback: 'Add one tiny next step so starting feels lighter.',
     actions: {
@@ -197,9 +292,14 @@ const translations = {
       running: 'Running',
       paused: 'Paused',
       finished: 'Finished',
+      finishedTitle: 'This round is complete',
+      finishedHint: 'No need to decide everything. Choose the next easiest move.',
       pause: 'Pause',
       resume: 'Resume',
       reset: 'Reset',
+      anotherRound: 'Another round',
+      markTaskDone: 'Mark task done',
+      restNow: 'Take a break',
       close: 'Back to planner',
       completeAndClose: 'Finish and close',
       noTask: 'There is no next step yet, so give yourself one tiny action to begin with.',
@@ -237,7 +337,20 @@ const translations = {
       focusMinutes: 'Focus round',
       deepMinutes: 'Deep round',
       breakMinutes: 'Break length',
-      autoStartBreak: 'Auto-start break after a work round',
+      autoStartBreak: 'Prioritize break after work',
+    },
+    insights: {
+      eyebrow: 'Focus log',
+      title: 'Make today’s work visible',
+      export: 'Export today log',
+      empty: 'After a completed focus round, the task and time will appear here.',
+      copied: 'Today’s focus log was copied. You can paste it into your project notes.',
+      downloaded: 'The browser downloaded today’s focus log.',
+      exportEmpty: 'No focus sessions yet today. Finish one round before exporting.',
+      weekTitle: '7-day focus trend',
+      weekHint: 'Only completed focus rounds are counted, so the chart reflects real work.',
+      minutes: 'min',
+      sessions: 'sessions',
     },
     breakMode: {
       title: 'Take a break',
@@ -267,11 +380,61 @@ const defaultSettings = {
   autoStartBreak: true,
 };
 
+const taskTemplates = ['paper', 'presentation', 'reading', 'exam', 'coding'];
+
+const suggestionRules = [
+  {
+    pattern: /论文|paper|essay|report|报告|写作|writing|literature|文献综述/i,
+    zh: '打开文档，先写出 3 个小标题。',
+    en: 'Open the document and write 3 small section headings first.',
+  },
+  {
+    pattern: /展示|演示|presentation|ppt|slides|deck|答辩/i,
+    zh: '先创建 PPT 文件，写出 3 页大纲。',
+    en: 'Create the slide file and draft the first 3 slide titles.',
+  },
+  {
+    pattern: /阅读|文献|article|reading|source|paper review/i,
+    zh: '打开材料，标记 3 个关键词和 1 句重要引用。',
+    en: 'Open the source, mark 3 keywords, and save 1 useful quote.',
+  },
+  {
+    pattern: /考试|复习|exam|quiz|test|midterm|final/i,
+    zh: '先看目录，列出 5 个不熟的概念。',
+    en: 'Scan the outline and list 5 concepts that feel unclear.',
+  },
+  {
+    pattern: /代码|编程|开发|code|coding|program|react|bug|debug/i,
+    zh: '打开项目，先运行一次测试并记录第一个问题。',
+    en: 'Open the project, run the tests once, and note the first issue.',
+  },
+];
+
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function getLastSevenDateKeys(todayKey) {
+  const today = new Date(`${todayKey}T12:00:00`);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (6 - index));
+    return getLocalDateKey(date);
+  });
+}
+
+function formatSessionTime(isoString, locale) {
+  const date = new Date(isoString);
+
+  if (Number.isNaN(date.getTime())) {
+    return '--:--';
+  }
+
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 function normalizeTask(task) {
@@ -344,6 +507,39 @@ function loadInitialSettings() {
   }
 }
 
+function loadInitialSessions() {
+  const raw = localStorage.getItem(SESSION_KEY);
+
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to parse focus sessions', error);
+    return [];
+  }
+}
+
+function suggestNextStep(title, course, language) {
+  const source = `${title} ${course}`.trim();
+
+  if (!source) {
+    return '';
+  }
+
+  const matchedRule = suggestionRules.find((rule) => rule.pattern.test(source));
+  if (matchedRule) {
+    return matchedRule[language];
+  }
+
+  return language === 'zh'
+    ? '先打开相关材料，完成一个 5 分钟能做完的小动作。'
+    : 'Open the related material and finish one action small enough for 5 minutes.';
+}
+
 function formatDueDate(dueDate, locale, fallbackText) {
   if (!dueDate) {
     return fallbackText;
@@ -400,6 +596,7 @@ function App() {
   const [theme, setTheme] = useState('calm');
   const [language, setLanguage] = useState(loadInitialLanguage);
   const [settings, setSettings] = useState(loadInitialSettings);
+  const [focusSessions, setFocusSessions] = useState(loadInitialSessions);
   const [showSettings, setShowSettings] = useState(false);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState(null);
   const [focusPhase, setFocusPhase] = useState('work');
@@ -421,6 +618,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(focusSessions));
+  }, [focusSessions]);
 
   useEffect(() => {
     if (supportsNotifications && Notification.permission === 'default') {
@@ -471,9 +672,25 @@ function App() {
   const isFocusFinished = activeFocusTask ? focusSecondsLeft === 0 : false;
 
   const focusTasks = tasks
-    .filter((task) => task.status !== 'done')
+    .filter((task) => task.status !== 'done' && task.todayFocus)
     .sort((a, b) => compareByPriority(a, b, todayKey))
     .slice(0, 3);
+
+  const todaySessions = focusSessions.filter((session) => session.date === todayKey);
+  const weekDateKeys = getLastSevenDateKeys(todayKey);
+  const weeklyFocusData = weekDateKeys.map((dateKey) => {
+    const sessions = focusSessions.filter((session) => session.date === dateKey);
+    const minutes = sessions.reduce((total, session) => total + (Number(session.minutes) || 0), 0);
+    const parsedDate = new Date(`${dateKey}T12:00:00`);
+
+    return {
+      dateKey,
+      minutes,
+      sessions: sessions.length,
+      label: parsedDate.toLocaleDateString(t.locale, { weekday: 'short' }),
+    };
+  });
+  const maxWeekMinutes = Math.max(1, ...weeklyFocusData.map((day) => day.minutes));
 
   const metrics = {
     total: tasks.length,
@@ -492,6 +709,8 @@ function App() {
       const diffDays = Math.round((dueDate - now) / (1000 * 60 * 60 * 24));
       return diffDays >= 0 && diffDays <= 7;
     }).length,
+    sessionsToday: todaySessions.length,
+    minutesToday: todaySessions.reduce((total, session) => total + (Number(session.minutes) || 0), 0),
   };
 
   const filteredTasks = tasks
@@ -512,8 +731,95 @@ function App() {
   };
 
   const handleChange = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => {
+      const next = { ...current, [field]: value };
+
+      if ((field === 'title' || field === 'course') && !current.nextStep.trim()) {
+        next.nextStep = suggestNextStep(
+          field === 'title' ? value : current.title,
+          field === 'course' ? value : current.course,
+          language
+        );
+      }
+
+      return next;
+    });
   };
+
+  const applyTemplate = (templateKey) => {
+    const template = t.templates[templateKey];
+    setEditingId(null);
+    setForm({
+      title: template.title,
+      course: template.course,
+      nextStep: template.nextStep,
+      effort: templateKey === 'paper' || templateKey === 'coding' ? 'focus' : 'quick',
+      dueDate: '',
+      todayFocus: true,
+    });
+  };
+
+  const downloadFocusLog = (content) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `FocusFlow-${todayKey}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    window.alert(t.insights.downloaded);
+  };
+
+  const exportTodayRecord = () => {
+    if (todaySessions.length === 0) {
+      window.alert(t.insights.exportEmpty);
+      return;
+    }
+
+    const heading =
+      language === 'zh'
+        ? `FocusFlow 今日专注记录 - ${todayKey}`
+        : `FocusFlow Today Focus Log - ${todayKey}`;
+    const summary =
+      language === 'zh'
+        ? `共完成 ${metrics.sessionsToday} 轮，累计 ${metrics.minutesToday} 分钟。`
+        : `${metrics.sessionsToday} sessions completed, ${metrics.minutesToday} minutes logged.`;
+    const details = todaySessions
+      .map((session, index) => {
+        const time = formatSessionTime(session.completedAt, t.locale);
+        return `${index + 1}. ${time} - ${session.taskTitle} (${session.minutes} ${t.insights.minutes})`;
+      })
+      .join('\n');
+    const content = `${heading}\n${summary}\n\n${details}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(content)
+        .then(() => window.alert(t.insights.copied))
+        .catch(() => downloadFocusLog(content));
+      return;
+    }
+
+    downloadFocusLog(content);
+  };
+
+  const recordFocusSession = useCallback((task, minutes, phase) => {
+    if (!task || phase !== 'work') {
+      return;
+    }
+
+    setFocusSessions((currentSessions) => [
+      {
+        id: `${Date.now()}-${task.id}`,
+        taskId: task.id,
+        taskTitle: task.title,
+        minutes,
+        date: getLocalDateKey(),
+        completedAt: new Date().toISOString(),
+      },
+      ...currentSessions,
+    ]);
+  }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -600,6 +906,9 @@ function App() {
       return;
     }
 
+    if (focusPhase === 'work' && focusSecondsLeft > 0) {
+      recordFocusSession(activeFocusTask, activeFocusDurationMinutes, focusPhase);
+    }
     updateTask(activeFocusTask.id, { status: 'done', todayFocus: false });
     setActiveFocusTaskId(null);
     setFocusPhase('work');
@@ -652,6 +961,9 @@ function App() {
       setFocusSecondsLeft((current) => {
         if (current <= 1) {
           window.clearInterval(timer);
+          if (focusPhase === 'work') {
+            recordFocusSession(activeFocusTask, activeFocusDurationMinutes, focusPhase);
+          }
           setFocusIsRunning(false);
           return 0;
         }
@@ -661,19 +973,7 @@ function App() {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [activeFocusTask, focusIsRunning, focusSecondsLeft]);
-
-  useEffect(() => {
-    if (!activeFocusTask || focusIsRunning || focusSecondsLeft !== 0) {
-      return;
-    }
-
-    if (focusPhase === 'work' && settings.autoStartBreak) {
-      setFocusPhase('break');
-      setFocusSecondsLeft(settings.breakMinutes * 60);
-      setFocusIsRunning(true);
-    }
-  }, [activeFocusTask, focusIsRunning, focusPhase, focusSecondsLeft, settings.autoStartBreak, settings.breakMinutes]);
+  }, [activeFocusTask, activeFocusDurationMinutes, focusIsRunning, focusPhase, focusSecondsLeft, recordFocusSession]);
 
   const getDueState = (task) => {
     if (!task.dueDate || task.status === 'done') {
@@ -721,10 +1021,15 @@ function App() {
                 ) : null}
               </div>
 
-              <h2 id="focus-mode-title">{t.focusMode.title}</h2>
+              <h2 id="focus-mode-title">
+                {isFocusFinished && focusPhase === 'work' ? t.focusMode.finishedTitle : t.focusMode.title}
+              </h2>
               <h3 className="focus-modal__task-title">
                 {focusPhase === 'break' ? t.breakMode.title : activeFocusTask.title}
               </h3>
+              {isFocusFinished && focusPhase === 'work' ? (
+                <p className="focus-modal__subtitle">{t.focusMode.finishedHint}</p>
+              ) : null}
 
               <div className="focus-countdown-panel">
                 <span className="metric-label">{t.focusMode.timerLabel}</span>
@@ -771,36 +1076,60 @@ function App() {
               </div>
 
               <div className="focus-modal__actions">
-                {isFocusFinished ? (
-                  focusPhase === 'work' && !settings.autoStartBreak ? (
-                    <button className="primary-button" type="button" onClick={startBreakSession}>
-                      {t.breakMode.start}
+                {isFocusFinished && focusPhase === 'work' ? (
+                  <>
+                    {settings.autoStartBreak ? (
+                      <button className="primary-button" type="button" onClick={startBreakSession}>
+                        {t.focusMode.restNow}
+                      </button>
+                    ) : null}
+                    <button
+                      className={settings.autoStartBreak ? 'secondary-button' : 'primary-button'}
+                      type="button"
+                      onClick={completeFocusSession}
+                    >
+                      {t.focusMode.markTaskDone}
                     </button>
-                  ) : null
+                    <button className="secondary-button" type="button" onClick={resetFocusSession}>
+                      {t.focusMode.anotherRound}
+                    </button>
+                    {!settings.autoStartBreak ? (
+                      <button className="secondary-button" type="button" onClick={startBreakSession}>
+                        {t.focusMode.restNow}
+                      </button>
+                    ) : null}
+                    <button className="ghost-button" type="button" onClick={closeFocusSession}>
+                      {t.focusMode.close}
+                    </button>
+                  </>
                 ) : (
-                  <button
-                    className="primary-button"
-                    type="button"
-                    onClick={() => setFocusIsRunning((current) => !current)}
-                  >
-                    {focusIsRunning ? t.focusMode.pause : t.focusMode.resume}
-                  </button>
+                  <>
+                    {!isFocusFinished ? (
+                      <button
+                        className="primary-button"
+                        type="button"
+                        onClick={() => setFocusIsRunning((current) => !current)}
+                      >
+                        {focusIsRunning ? t.focusMode.pause : t.focusMode.resume}
+                      </button>
+                    ) : null}
+                    <button className="secondary-button" type="button" onClick={resetFocusSession}>
+                      {t.focusMode.reset}
+                    </button>
+                    {focusPhase === 'work' ? (
+                      <button className="secondary-button" type="button" onClick={completeFocusSession}>
+                        {t.focusMode.completeAndClose}
+                      </button>
+                    ) : (
+                      <button className="secondary-button" type="button" onClick={closeFocusSession}>
+                        {t.breakMode.skip}
+                      </button>
+                    )}
+                    <button className="ghost-button" type="button" onClick={closeFocusSession}>
+                      {t.focusMode.close}
+                    </button>
+                  </>
                 )}
-                <button className="secondary-button" type="button" onClick={resetFocusSession}>
-                  {t.focusMode.reset}
-                </button>
-                {focusPhase === 'work' ? (
-                  <button className="secondary-button" type="button" onClick={completeFocusSession}>
-                    {t.focusMode.completeAndClose}
-                  </button>
-                ) : (
-                  <button className="secondary-button" type="button" onClick={closeFocusSession}>
-                    {t.breakMode.skip}
-                  </button>
-                )}
-                <button className="ghost-button" type="button" onClick={closeFocusSession}>
-                  {t.focusMode.close}
-                </button>
               </div>
             </div>
           </section>
@@ -935,6 +1264,74 @@ function App() {
             <span className="metric-label">{t.metrics.overdue.label}</span>
             <strong>{metrics.overdue}</strong>
           </article>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.sessions.label}</span>
+            <strong>{metrics.sessionsToday}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.minutes.label}</span>
+            <strong>{metrics.minutesToday}</strong>
+          </article>
+        </section>
+
+        <section className="insights-grid" aria-label={t.insights.eyebrow}>
+          <article className="panel insight-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="panel-kicker">{t.insights.eyebrow}</p>
+                <h2>{t.insights.title}</h2>
+              </div>
+              <button className="ghost-button" type="button" onClick={exportTodayRecord}>
+                {t.insights.export}
+              </button>
+            </div>
+
+            <div className="history-list">
+              {todaySessions.length > 0 ? (
+                todaySessions.slice(0, 5).map((session) => (
+                  <article className="history-item" key={session.id}>
+                    <span className="history-time">{formatSessionTime(session.completedAt, t.locale)}</span>
+                    <div>
+                      <strong>{session.taskTitle}</strong>
+                      <p>
+                        {session.minutes} {t.insights.minutes}
+                      </p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="empty-state compact">
+                  <p>{t.insights.empty}</p>
+                </div>
+              )}
+            </div>
+          </article>
+
+          <article className="panel insight-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="panel-kicker">{t.insights.weekTitle}</p>
+                <h2>{metrics.minutesToday} {t.insights.minutes}</h2>
+                <p className="panel-note">{t.insights.weekHint}</p>
+              </div>
+            </div>
+
+            <div className="trend-chart">
+              {weeklyFocusData.map((day) => {
+                const fillHeight = day.minutes > 0 ? Math.max(12, (day.minutes / maxWeekMinutes) * 100) : 0;
+
+                return (
+                  <div className="trend-day" key={day.dateKey}>
+                    <div className="trend-bar" aria-label={`${day.label}: ${day.minutes} ${t.insights.minutes}`}>
+                      <span className="trend-fill" style={{ height: `${fillHeight}%` }} />
+                    </div>
+                    <span>{day.label}</span>
+                    <strong>{day.minutes}</strong>
+                  </div>
+                );
+              })}
+            </div>
+          </article>
         </section>
 
         <div className="content-grid">
@@ -950,6 +1347,22 @@ function App() {
                 </button>
               ) : null}
             </div>
+
+            {!editingId ? (
+              <div className="template-strip" aria-label={t.templatesTitle}>
+                <span>{t.templatesTitle}</span>
+                {taskTemplates.map((templateKey) => (
+                  <button
+                    className="template-chip"
+                    key={templateKey}
+                    type="button"
+                    onClick={() => applyTemplate(templateKey)}
+                  >
+                    {t.templates[templateKey].label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             <form className="task-form" onSubmit={handleSubmit}>
               <label>
@@ -989,6 +1402,7 @@ function App() {
                   onChange={(event) => handleChange('nextStep', event.target.value)}
                   placeholder={t.fields.nextStepPlaceholder}
                 />
+                {form.nextStep ? <span className="assist-note">{t.fields.nextStepAssist}</span> : null}
               </label>
 
               <div className="form-row">
@@ -1069,6 +1483,14 @@ function App() {
                 <div className="empty-state">
                   <h3>{t.focusEmptyTitle}</h3>
                   <p>{t.focusEmptyText}</p>
+                  <div className="empty-actions">
+                    <a className="secondary-button" href="#quick-add">
+                      {t.focusEmptyAction}
+                    </a>
+                    <button className="ghost-button" type="button" onClick={() => applyTemplate('paper')}>
+                      {t.focusEmptyTemplate}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -51,3 +51,19 @@ test('opens focus mode after clicking start now', () => {
   expect(within(dialog).getByText(/05:00|04:59/)).toBeInTheDocument();
   expect(within(dialog).getByText(/打开文档并先写三句/i)).toBeInTheDocument();
 });
+
+test('suggests next step and applies task templates', () => {
+  render(<App />);
+
+  fireEvent.change(screen.getByLabelText(/任务标题/i), {
+    target: { value: '写 research paper' },
+  });
+
+  expect(screen.getByLabelText(/最小下一步/i).value).toMatch(/打开文档，先写出 3 个小标题。/i);
+
+  fireEvent.click(screen.getByRole('button', { name: /做展示/i }));
+
+  expect(screen.getByLabelText(/任务标题/i).value).toMatch(/准备课堂展示/i);
+  expect(screen.getByLabelText(/课程 \/ 项目/i).value).toMatch(/课堂展示/i);
+  expect(screen.getByLabelText(/最小下一步/i).value).toMatch(/先创建 PPT 文件，写出 3 页大纲。/i);
+});
