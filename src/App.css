@@ -431,6 +431,45 @@
   line-height: 1.55;
 }
 
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0.72rem 0.9rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.sync-status strong {
+  color: var(--text);
+}
+
+.sync-connected {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: rgba(22, 124, 115, 0.2);
+}
+
+.sync-error {
+  background: rgba(207, 98, 56, 0.1);
+  color: var(--danger);
+  border-color: rgba(207, 98, 56, 0.2);
+}
+
+.theme-night .sync-connected {
+  border-color: rgba(159, 242, 223, 0.3);
+}
+
+.theme-night .sync-error {
+  background: rgba(255, 154, 116, 0.12);
+  border-color: rgba(255, 154, 116, 0.24);
+}
+
 .settings-checkbox {
   align-items: center;
   justify-content: center;

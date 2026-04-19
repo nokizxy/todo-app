@@ -6,6 +6,8 @@ const LEGACY_STORAGE_KEY = 'tasks';
 const LANGUAGE_KEY = 'focusflow-study-planner.language';
 const SETTINGS_KEY = 'focusflow-study-planner.settings.v1';
 const SESSION_KEY = 'focusflow-study-planner.sessions.v1';
+const CLOUD_SYNC_ENABLED = process.env.REACT_APP_ENABLE_CLOUD_SYNC === 'true';
+const CLOUD_USER_ID = process.env.REACT_APP_FOCUSFLOW_USER_ID || 'demo-user';
 
 const translations = {
   zh: {
@@ -172,6 +174,14 @@ const translations = {
       breakMinutes: '休息时长',
       autoStartBreak: '专注结束后优先推荐休息',
       storageNote: '数据保存在当前浏览器中。清除浏览器数据或更换设备后，本地任务和记录可能无法保留。',
+      syncStatusLabel: '数据模式',
+      syncStatuses: {
+        local: '本地模式：使用浏览器 LocalStorage 保存数据。',
+        connecting: '正在连接 Supabase 数据库...',
+        connected: '云端同步已连接：任务和专注记录会同步到 Supabase/Postgres。',
+        syncing: '正在同步到 Supabase 数据库...',
+        error: '云端同步未连接：当前仍可使用本地数据。',
+      },
     },
     insights: {
       eyebrow: '专注记录',
@@ -365,6 +375,14 @@ const translations = {
       autoStartBreak: 'Prioritize break after work',
       storageNote:
         'Data is saved in this browser. If browser data is cleared or you switch devices, local tasks and logs may not carry over.',
+      syncStatusLabel: 'Data mode',
+      syncStatuses: {
+        local: 'Local mode: data is stored with browser LocalStorage.',
+        connecting: 'Connecting to the Supabase database...',
+        connected: 'Cloud sync connected: tasks and focus logs sync to Supabase/Postgres.',
+        syncing: 'Syncing to the Supabase database...',
+        error: 'Cloud sync is not connected: local data still works.',
+      },
     },
     insights: {
       eyebrow: 'Focus log',
@@ -492,6 +510,77 @@ function normalizeTask(task) {
     notified: task.notified ?? false,
     createdAt: task.createdAt ?? new Date().toISOString(),
   };
+}
+
+function cloudTaskToAppTask(row) {
+  return normalizeTask({
+    id: Number(row.id) || row.id,
+    title: row.title,
+    course: row.course,
+    nextStep: row.next_step,
+    effort: row.effort,
+    dueDate: row.due_date ?? '',
+    status: row.status,
+    todayFocus: row.today_focus,
+    notified: row.notified,
+    createdAt: row.created_at,
+  });
+}
+
+function appTaskToCloudTask(task) {
+  return {
+    id: String(task.id),
+    user_id: CLOUD_USER_ID,
+    title: task.title,
+    course: task.course || '',
+    next_step: task.nextStep || '',
+    effort: task.effort,
+    due_date: task.dueDate || null,
+    status: task.status,
+    today_focus: Boolean(task.todayFocus),
+    notified: Boolean(task.notified),
+    created_at: task.createdAt,
+  };
+}
+
+function cloudSessionToAppSession(row) {
+  return {
+    id: row.id,
+    taskId: Number(row.task_id) || row.task_id,
+    taskTitle: row.task_title,
+    minutes: row.minutes,
+    date: row.session_date,
+    completedAt: row.completed_at,
+  };
+}
+
+function appSessionToCloudSession(session) {
+  return {
+    id: String(session.id),
+    user_id: CLOUD_USER_ID,
+    task_id: String(session.taskId),
+    task_title: session.taskTitle,
+    minutes: Number(session.minutes) || 0,
+    session_date: session.date,
+    completed_at: session.completedAt,
+  };
+}
+
+async function requestCloud(path, options = {}) {
+  const response = await fetch(`${path}${path.includes('?') ? '&' : '?'}userId=${encodeURIComponent(CLOUD_USER_ID)}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Cloud request failed with ${response.status}`);
+  }
+
+  return response.json();
 }
 
 function loadInitialTasks() {
@@ -639,7 +728,10 @@ function App() {
   const [focusPhase, setFocusPhase] = useState('work');
   const [focusSecondsLeft, setFocusSecondsLeft] = useState(0);
   const [focusIsRunning, setFocusIsRunning] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(CLOUD_SYNC_ENABLED ? 'connecting' : 'local');
   const nextStepRef = useRef(null);
+  const cloudHydratedRef = useRef(false);
+  const cloudAvailableRef = useRef(false);
 
   const t = translations[language];
   const todayKey = getLocalDateKey();
@@ -647,6 +739,25 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+
+    if (!CLOUD_SYNC_ENABLED || !cloudHydratedRef.current || !cloudAvailableRef.current) {
+      return undefined;
+    }
+
+    const syncTimer = window.setTimeout(() => {
+      setSyncStatus('syncing');
+      requestCloud('/api/tasks', {
+        method: 'PUT',
+        body: JSON.stringify({ tasks: tasks.map(appTaskToCloudTask) }),
+      })
+        .then(() => setSyncStatus('connected'))
+        .catch((error) => {
+          console.error('Failed to sync tasks to Supabase', error);
+          setSyncStatus('error');
+        });
+    }, 700);
+
+    return () => window.clearTimeout(syncTimer);
   }, [tasks]);
 
   useEffect(() => {
@@ -659,7 +770,72 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(focusSessions));
+
+    if (!CLOUD_SYNC_ENABLED || !cloudHydratedRef.current || !cloudAvailableRef.current) {
+      return undefined;
+    }
+
+    const syncTimer = window.setTimeout(() => {
+      setSyncStatus('syncing');
+      requestCloud('/api/focus-sessions', {
+        method: 'PUT',
+        body: JSON.stringify({ sessions: focusSessions.map(appSessionToCloudSession) }),
+      })
+        .then(() => setSyncStatus('connected'))
+        .catch((error) => {
+          console.error('Failed to sync focus sessions to Supabase', error);
+          setSyncStatus('error');
+        });
+    }, 700);
+
+    return () => window.clearTimeout(syncTimer);
   }, [focusSessions]);
+
+  useEffect(() => {
+    if (!CLOUD_SYNC_ENABLED) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadCloudData() {
+      try {
+        setSyncStatus('connecting');
+        const [cloudTasks, cloudSessions] = await Promise.all([
+          requestCloud('/api/tasks'),
+          requestCloud('/api/focus-sessions'),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        cloudAvailableRef.current = true;
+        cloudHydratedRef.current = true;
+
+        if (Array.isArray(cloudTasks) && cloudTasks.length > 0) {
+          setTasks(cloudTasks.map(cloudTaskToAppTask));
+        }
+
+        if (Array.isArray(cloudSessions) && cloudSessions.length > 0) {
+          setFocusSessions(cloudSessions.map(cloudSessionToAppSession));
+        }
+
+        setSyncStatus('connected');
+      } catch (error) {
+        console.error('Failed to load Supabase data', error);
+        cloudAvailableRef.current = false;
+        cloudHydratedRef.current = true;
+        setSyncStatus('error');
+      }
+    }
+
+    loadCloudData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (focusSessions.length > 0) {
@@ -1316,6 +1492,9 @@ function App() {
               </label>
             </div>
             <p className="storage-note">{t.settings.storageNote}</p>
+            <p className={`sync-status sync-${syncStatus}`}>
+              <strong>{t.settings.syncStatusLabel}:</strong> {t.settings.syncStatuses[syncStatus]}
+            </p>
           </section>
         ) : null}
 
