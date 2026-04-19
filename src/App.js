@@ -79,6 +79,7 @@ const translations = {
       nextStep: '最小下一步',
       nextStepPlaceholder: '打开文章，标两段引用，再写一句摘要。',
       nextStepGuide: '写一个 5 分钟内就能开始的动作，而不是一个大目标。',
+      nextStepAction: '自动建议下一步',
       nextStepAssist: '已根据任务自动建议，可自行修改。',
       effort: '所需精力',
       todayFocus: '加入今日聚焦',
@@ -269,6 +270,7 @@ const translations = {
       nextStep: 'Smallest next step',
       nextStepPlaceholder: 'Open the article, highlight two quotes, and write one summary sentence.',
       nextStepGuide: 'Write an action you can begin within 5 minutes, not a big goal.',
+      nextStepAction: 'Suggest next step',
       nextStepAssist: 'Auto-suggested from the task. You can edit it.',
       effort: 'Energy needed',
       todayFocus: 'Add to today focus',
@@ -807,6 +809,21 @@ function App() {
     }, 0);
   };
 
+  const handleSuggestNextStep = () => {
+    const suggestedNextStep = suggestNextStep(form.title, form.course, language);
+
+    if (!suggestedNextStep) {
+      focusNextStepField();
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      nextStep: suggestedNextStep,
+    }));
+    focusNextStepField();
+  };
+
   const handleFormKeyDown = (event) => {
     const isComposing = event.nativeEvent?.isComposing || event.keyCode === 229;
     const isTextarea = event.target.tagName === 'TEXTAREA';
@@ -1320,136 +1337,6 @@ function App() {
           </section>
         </section>
 
-        <section className="metrics-grid" aria-label={t.metricsAria}>
-          <article className="metric-card">
-            <span className="metric-label">{t.metrics.focus.label}</span>
-            <strong>{focusTasks.length}</strong>
-          </article>
-          <article className="metric-card">
-            <span className="metric-label">{t.metrics.progress.label}</span>
-            <strong>{metrics.inProgress}</strong>
-          </article>
-          <article className="metric-card">
-            <span className="metric-label">{t.metrics.week.label}</span>
-            <strong>{metrics.dueThisWeek}</strong>
-          </article>
-          <article className="metric-card danger">
-            <span className="metric-label">{t.metrics.overdue.label}</span>
-            <strong>{metrics.overdue}</strong>
-          </article>
-          <article className="metric-card">
-            <span className="metric-label">{t.metrics.sessions.label}</span>
-            <strong>{metrics.sessionsToday}</strong>
-          </article>
-          <article className="metric-card">
-            <span className="metric-label">{t.metrics.minutes.label}</span>
-            <strong>{metrics.minutesToday}</strong>
-          </article>
-        </section>
-
-        {tasks.length === 0 ? (
-          <section className="onboarding-panel">
-            <div>
-              <p className="panel-kicker">{t.onboarding.eyebrow}</p>
-              <h2>{t.onboarding.title}</h2>
-            </div>
-            <div className="onboarding-steps">
-              {t.onboarding.steps.map((step, index) => (
-                <span key={step}>
-                  <strong>{index + 1}</strong>
-                  {step}
-                </span>
-              ))}
-            </div>
-            <div className="onboarding-actions">
-              <a className="primary-button" href="#quick-add">
-                {t.onboarding.action}
-              </a>
-              <button className="ghost-button" type="button" onClick={() => applyTemplate('paper')}>
-                {t.onboarding.template}
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        {showInsights ? (
-          <section className="insights-grid" aria-label={t.insights.eyebrow}>
-            <article className="panel insight-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-kicker">{t.insights.eyebrow}</p>
-                  <h2>{t.insights.title}</h2>
-                </div>
-                <div className="panel-actions">
-                  <button className="ghost-button" type="button" onClick={exportTodayRecord}>
-                    {t.insights.export}
-                  </button>
-                  <button className="ghost-button" type="button" onClick={() => setShowInsights(false)}>
-                    {t.insights.hide}
-                  </button>
-                </div>
-              </div>
-
-              <div className="history-list">
-                {todaySessions.length > 0 ? (
-                  todaySessions.slice(0, 5).map((session) => (
-                    <article className="history-item" key={session.id}>
-                      <span className="history-time">{formatSessionTime(session.completedAt, t.locale)}</span>
-                      <div>
-                        <strong>{session.taskTitle}</strong>
-                        <p>
-                          {session.minutes} {t.insights.minutes}
-                        </p>
-                      </div>
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state compact">
-                    <p>{t.insights.empty}</p>
-                  </div>
-                )}
-              </div>
-            </article>
-
-            <article className="panel insight-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="panel-kicker">{t.insights.weekTitle}</p>
-                  <h2>{metrics.minutesToday} {t.insights.minutes}</h2>
-                  <p className="panel-note">{t.insights.weekHint}</p>
-                </div>
-              </div>
-
-              <div className="trend-chart">
-                {weeklyFocusData.map((day) => {
-                  const fillHeight = day.minutes > 0 ? Math.max(12, (day.minutes / maxWeekMinutes) * 100) : 0;
-
-                  return (
-                    <div className="trend-day" key={day.dateKey}>
-                      <div className="trend-bar" aria-label={`${day.label}: ${day.minutes} ${t.insights.minutes}`}>
-                        <span className="trend-fill" style={{ height: `${fillHeight}%` }} />
-                      </div>
-                      <span>{day.label}</span>
-                      <strong>{day.minutes}</strong>
-                    </div>
-                  );
-                })}
-              </div>
-            </article>
-          </section>
-        ) : (
-          <section className="panel insights-collapsed">
-            <div>
-              <p className="panel-kicker">{t.insights.eyebrow}</p>
-              <h2>{t.insights.collapsedTitle}</h2>
-              <p>{t.insights.collapsedText}</p>
-            </div>
-            <button className="secondary-button" type="button" onClick={() => setShowInsights(true)}>
-              {t.insights.show}
-            </button>
-          </section>
-        )}
-
         <div className="content-grid">
           <section className="panel form-panel" id="quick-add">
             <div className="panel-heading">
@@ -1510,12 +1397,18 @@ function App() {
                 </label>
               </div>
 
-              <label className="next-step-field">
-                <span className="field-title">
-                  <span>{t.fields.nextStep}</span>
-                  <small>{t.fields.nextStepGuide}</small>
+              <div className="next-step-field">
+                <span className="next-step-header">
+                  <label className="field-title" htmlFor="next-step-input">
+                    <span>{t.fields.nextStep}</span>
+                    <small>{t.fields.nextStepGuide}</small>
+                  </label>
+                  <button className="suggest-button" type="button" onClick={handleSuggestNextStep}>
+                    {t.fields.nextStepAction}
+                  </button>
                 </span>
                 <textarea
+                  id="next-step-input"
                   ref={nextStepRef}
                   rows="3"
                   value={form.nextStep}
@@ -1523,7 +1416,7 @@ function App() {
                   placeholder={t.fields.nextStepPlaceholder}
                 />
                 {form.nextStep ? <span className="assist-note">{t.fields.nextStepAssist}</span> : null}
-              </label>
+              </div>
 
               <div className="form-row">
                 <label>
@@ -1616,6 +1509,136 @@ function App() {
             </div>
           </section>
         </div>
+
+        {tasks.length === 0 ? (
+          <section className="onboarding-panel">
+            <div>
+              <p className="panel-kicker">{t.onboarding.eyebrow}</p>
+              <h2>{t.onboarding.title}</h2>
+            </div>
+            <div className="onboarding-steps">
+              {t.onboarding.steps.map((step, index) => (
+                <span key={step}>
+                  <strong>{index + 1}</strong>
+                  {step}
+                </span>
+              ))}
+            </div>
+            <div className="onboarding-actions">
+              <a className="primary-button" href="#quick-add">
+                {t.onboarding.action}
+              </a>
+              <button className="ghost-button" type="button" onClick={() => applyTemplate('paper')}>
+                {t.onboarding.template}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="metrics-grid" aria-label={t.metricsAria}>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.focus.label}</span>
+            <strong>{focusTasks.length}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.progress.label}</span>
+            <strong>{metrics.inProgress}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.week.label}</span>
+            <strong>{metrics.dueThisWeek}</strong>
+          </article>
+          <article className="metric-card danger">
+            <span className="metric-label">{t.metrics.overdue.label}</span>
+            <strong>{metrics.overdue}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.sessions.label}</span>
+            <strong>{metrics.sessionsToday}</strong>
+          </article>
+          <article className="metric-card">
+            <span className="metric-label">{t.metrics.minutes.label}</span>
+            <strong>{metrics.minutesToday}</strong>
+          </article>
+        </section>
+
+        {showInsights ? (
+          <section className="insights-grid" aria-label={t.insights.eyebrow}>
+            <article className="panel insight-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-kicker">{t.insights.eyebrow}</p>
+                  <h2>{t.insights.title}</h2>
+                </div>
+                <div className="panel-actions">
+                  <button className="ghost-button" type="button" onClick={exportTodayRecord}>
+                    {t.insights.export}
+                  </button>
+                  <button className="ghost-button" type="button" onClick={() => setShowInsights(false)}>
+                    {t.insights.hide}
+                  </button>
+                </div>
+              </div>
+
+              <div className="history-list">
+                {todaySessions.length > 0 ? (
+                  todaySessions.slice(0, 5).map((session) => (
+                    <article className="history-item" key={session.id}>
+                      <span className="history-time">{formatSessionTime(session.completedAt, t.locale)}</span>
+                      <div>
+                        <strong>{session.taskTitle}</strong>
+                        <p>
+                          {session.minutes} {t.insights.minutes}
+                        </p>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-state compact">
+                    <p>{t.insights.empty}</p>
+                  </div>
+                )}
+              </div>
+            </article>
+
+            <article className="panel insight-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-kicker">{t.insights.weekTitle}</p>
+                  <h2>{metrics.minutesToday} {t.insights.minutes}</h2>
+                  <p className="panel-note">{t.insights.weekHint}</p>
+                </div>
+              </div>
+
+              <div className="trend-chart">
+                {weeklyFocusData.map((day) => {
+                  const fillHeight = day.minutes > 0 ? Math.max(12, (day.minutes / maxWeekMinutes) * 100) : 0;
+
+                  return (
+                    <div className="trend-day" key={day.dateKey}>
+                      <div className="trend-bar" aria-label={`${day.label}: ${day.minutes} ${t.insights.minutes}`}>
+                        <span className="trend-fill" style={{ height: `${fillHeight}%` }} />
+                      </div>
+                      <span>{day.label}</span>
+                      <strong>{day.minutes}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          </section>
+        ) : (
+          <section className="panel insights-collapsed">
+            <div>
+              <p className="panel-kicker">{t.insights.eyebrow}</p>
+              <h2>{t.insights.collapsedTitle}</h2>
+              <p>{t.insights.collapsedText}</p>
+            </div>
+            <button className="secondary-button" type="button" onClick={() => setShowInsights(true)}>
+              {t.insights.show}
+            </button>
+          </section>
+        )}
 
         <section className="panel tasks-panel">
           <div className="panel-heading">

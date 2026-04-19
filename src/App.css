@@ -721,6 +721,12 @@
   background: var(--surface);
 }
 
+.form-panel {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(22, 124, 115, 0.12), transparent 30%),
+    linear-gradient(180deg, var(--surface-strong), var(--surface));
+}
+
 .panel-heading {
   display: flex;
   align-items: flex-start;
@@ -807,6 +813,8 @@
 
 .next-step-field {
   position: relative;
+  display: grid;
+  gap: 10px;
   padding: 16px;
   border-radius: 24px;
   background:
@@ -819,6 +827,13 @@
   border-color: rgba(159, 242, 223, 0.24);
 }
 
+.next-step-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
 .field-title {
   display: grid;
   gap: 6px;
@@ -829,6 +844,35 @@
   font-size: 0.86rem;
   font-weight: 700;
   line-height: 1.45;
+}
+
+.suggest-button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(22, 124, 115, 0.24);
+  border-radius: 999px;
+  padding: 0.58rem 0.78rem;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.suggest-button:hover {
+  transform: translateY(-1px);
+  background: var(--accent-soft);
+  border-color: rgba(22, 124, 115, 0.34);
+}
+
+.theme-night .suggest-button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #9ff2df;
+  border-color: rgba(159, 242, 223, 0.28);
 }
 
 .form-row,
@@ -1125,15 +1169,53 @@
   }
 
   .principles-grid,
-  .metrics-grid,
   .insights-grid,
   .onboarding-steps,
   .task-grid {
     grid-template-columns: 1fr;
   }
 
+  .hero-panel {
+    padding: 26px 24px;
+    gap: 18px;
+  }
+
   .hero-panel h1 {
     max-width: none;
+    font-size: clamp(2.25rem, 12vw, 3.1rem);
+    line-height: 1;
+  }
+
+  .metrics-grid {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+
+  .metric-card {
+    flex: 0 0 138px;
+    min-height: 84px;
+    padding: 14px;
+    scroll-snap-align: start;
+  }
+
+  .metric-card strong {
+    font-size: 1.85rem;
+  }
+
+  .metric-label {
+    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+  }
+
+  .next-step-header {
+    display: grid;
+  }
+
+  .suggest-button {
+    justify-self: start;
   }
 
   .focus-modal {
