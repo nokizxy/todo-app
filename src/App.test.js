@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App';
 
 beforeEach(() => {
@@ -66,4 +66,20 @@ test('suggests next step and applies task templates', () => {
   expect(screen.getByLabelText(/任务标题/i).value).toMatch(/准备课堂展示/i);
   expect(screen.getByLabelText(/课程 \/ 项目/i).value).toMatch(/课堂展示/i);
   expect(screen.getByLabelText(/最小下一步/i).value).toMatch(/先创建 PPT 文件，写出 3 页大纲。/i);
+});
+
+test('pressing enter in the title field does not create a task before reviewing next step', async () => {
+  render(<App />);
+
+  const titleInput = screen.getByLabelText(/任务标题/i);
+  const nextStepInput = screen.getByLabelText(/最小下一步/i);
+
+  fireEvent.change(titleInput, {
+    target: { value: '我吃饭' },
+  });
+  fireEvent.keyDown(titleInput, { key: 'Enter', code: 'Enter' });
+
+  await waitFor(() => expect(nextStepInput).toHaveFocus());
+  expect(nextStepInput.value).toMatch(/准备食物|外卖页面/i);
+  expect(screen.queryByRole('heading', { name: /我吃饭/i })).not.toBeInTheDocument();
 });

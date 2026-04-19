@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
 
 const STORAGE_KEY = 'focusflow-study-planner.tasks.v1';
@@ -433,6 +433,11 @@ const suggestionRules = [
     en: 'Scan the outline and list 5 concepts that feel unclear.',
   },
   {
+    pattern: /吃饭|早餐|午饭|晚饭|外卖|meal|breakfast|lunch|dinner/i,
+    zh: '先站起来，准备食物或打开外卖页面。',
+    en: 'Stand up first, then prepare food or open the delivery page.',
+  },
+  {
     pattern: /代码|编程|开发|code|coding|program|react|bug|debug/i,
     zh: '打开项目，先运行一次测试并记录第一个问题。',
     en: 'Open the project, run the tests once, and note the first issue.',
@@ -565,8 +570,8 @@ function suggestNextStep(title, course, language) {
   }
 
   return language === 'zh'
-    ? '先打开相关材料，完成一个 5 分钟能做完的小动作。'
-    : 'Open the related material and finish one action small enough for 5 minutes.';
+    ? '先准备相关东西，然后做一个 5 分钟能完成的小动作。'
+    : 'Prepare the related item first, then finish one action small enough for 5 minutes.';
 }
 
 function formatDueDate(dueDate, locale, fallbackText) {
@@ -632,6 +637,7 @@ function App() {
   const [focusPhase, setFocusPhase] = useState('work');
   const [focusSecondsLeft, setFocusSecondsLeft] = useState(0);
   const [focusIsRunning, setFocusIsRunning] = useState(false);
+  const nextStepRef = useRef(null);
 
   const t = translations[language];
   const todayKey = getLocalDateKey();
@@ -795,6 +801,23 @@ function App() {
     });
   };
 
+  const focusNextStepField = () => {
+    window.setTimeout(() => {
+      nextStepRef.current?.focus();
+    }, 0);
+  };
+
+  const handleFormKeyDown = (event) => {
+    const isComposing = event.nativeEvent?.isComposing || event.keyCode === 229;
+    const isTextarea = event.target.tagName === 'TEXTAREA';
+    const isSubmitButton = event.target.type === 'submit';
+
+    if (event.key === 'Enter' && !isComposing && !isTextarea && !isSubmitButton) {
+      event.preventDefault();
+      focusNextStepField();
+    }
+  };
+
   const downloadFocusLog = (content) => {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -860,6 +883,16 @@ function App() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!form.title.trim()) {
+      return;
+    }
+
+    if (!form.nextStep.trim()) {
+      const suggestedNextStep = suggestNextStep(form.title, form.course, language);
+      setForm((current) => ({
+        ...current,
+        nextStep: suggestedNextStep,
+      }));
+      focusNextStepField();
       return;
     }
 
@@ -1447,7 +1480,7 @@ function App() {
               </div>
             ) : null}
 
-            <form className="task-form" onSubmit={handleSubmit}>
+            <form className="task-form" onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
               <label>
                 {t.fields.title}
                 <input
@@ -1483,6 +1516,7 @@ function App() {
                   <small>{t.fields.nextStepGuide}</small>
                 </span>
                 <textarea
+                  ref={nextStepRef}
                   rows="3"
                   value={form.nextStep}
                   onChange={(event) => handleChange('nextStep', event.target.value)}
