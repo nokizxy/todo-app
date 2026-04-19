@@ -17,6 +17,13 @@ const translations = {
     heroTitle: '把任务变成你现在就能开始的下一步。',
     heroPrimary: '低阻力添加任务',
     heroSecondary: '查看今日聚焦',
+    onboarding: {
+      eyebrow: '第一次使用',
+      title: '不用先规划完整一天，按这 3 步开始就好。',
+      steps: ['添加一个小任务', '写下 5 分钟内能开始的下一步', '点击现在开始'],
+      action: '从一个任务开始',
+      template: '用模板试一下',
+    },
     metricsAria: '计划摘要',
     metrics: {
       focus: { label: '今日聚焦' },
@@ -71,6 +78,7 @@ const translations = {
       dueDate: '截止日期',
       nextStep: '最小下一步',
       nextStepPlaceholder: '打开文章，标两段引用，再写一句摘要。',
+      nextStepGuide: '写一个 5 分钟内就能开始的动作，而不是一个大目标。',
       nextStepAssist: '已根据任务自动建议，可自行修改。',
       effort: '所需精力',
       todayFocus: '加入今日聚焦',
@@ -117,6 +125,7 @@ const translations = {
       finished: '本轮完成',
       finishedTitle: '这一轮已经完成',
       finishedHint: '现在不用马上想太多，选一个最顺手的下一步就好。',
+      celebration: (minutes) => `你今天已经专注了 ${minutes} 分钟，做得很好。`,
       pause: '暂停',
       resume: '继续',
       reset: '重新开始',
@@ -161,11 +170,16 @@ const translations = {
       deepMinutes: '深度时长',
       breakMinutes: '休息时长',
       autoStartBreak: '专注结束后优先推荐休息',
+      storageNote: '数据保存在当前浏览器中。清除浏览器数据或更换设备后，本地任务和记录可能无法保留。',
     },
     insights: {
       eyebrow: '专注记录',
       title: '今天做过的事看得见',
       export: '导出今日记录',
+      show: '查看记录',
+      hide: '收起记录',
+      collapsedTitle: '专注记录已收起',
+      collapsedText: '为了保持首页轻量，记录和趋势图可以需要时再打开。',
       empty: '完成一轮专注后，这里会自动记录任务和时间。',
       copied: '今日专注记录已复制，可以粘贴到开发过程记录或作业说明中。',
       downloaded: '浏览器已下载今日专注记录。',
@@ -193,6 +207,13 @@ const translations = {
     heroTitle: 'Turn every task into the next step you can start now.',
     heroPrimary: 'Quick add a task',
     heroSecondary: 'Open today focus',
+    onboarding: {
+      eyebrow: 'First visit',
+      title: 'No need to plan the whole day. Start with these 3 steps.',
+      steps: ['Add one tiny task', 'Write a next step you can start in 5 minutes', 'Click Start now'],
+      action: 'Start with one task',
+      template: 'Try a template',
+    },
     metricsAria: 'Planner summary',
     metrics: {
       focus: { label: 'Today focus' },
@@ -247,6 +268,7 @@ const translations = {
       dueDate: 'Due date',
       nextStep: 'Smallest next step',
       nextStepPlaceholder: 'Open the article, highlight two quotes, and write one summary sentence.',
+      nextStepGuide: 'Write an action you can begin within 5 minutes, not a big goal.',
       nextStepAssist: 'Auto-suggested from the task. You can edit it.',
       effort: 'Energy needed',
       todayFocus: 'Add to today focus',
@@ -294,6 +316,7 @@ const translations = {
       finished: 'Finished',
       finishedTitle: 'This round is complete',
       finishedHint: 'No need to decide everything. Choose the next easiest move.',
+      celebration: (minutes) => `You have focused for ${minutes} minutes today. Nice work.`,
       pause: 'Pause',
       resume: 'Resume',
       reset: 'Reset',
@@ -338,11 +361,17 @@ const translations = {
       deepMinutes: 'Deep round',
       breakMinutes: 'Break length',
       autoStartBreak: 'Prioritize break after work',
+      storageNote:
+        'Data is saved in this browser. If browser data is cleared or you switch devices, local tasks and logs may not carry over.',
     },
     insights: {
       eyebrow: 'Focus log',
       title: 'Make today’s work visible',
       export: 'Export today log',
+      show: 'Show log',
+      hide: 'Hide log',
+      collapsedTitle: 'Focus log is tucked away',
+      collapsedText: 'To keep the home page light, open logs and trends only when you need them.',
       empty: 'After a completed focus round, the task and time will appear here.',
       copied: 'Today’s focus log was copied. You can paste it into your project notes.',
       downloaded: 'The browser downloaded today’s focus log.',
@@ -598,6 +627,7 @@ function App() {
   const [settings, setSettings] = useState(loadInitialSettings);
   const [focusSessions, setFocusSessions] = useState(loadInitialSessions);
   const [showSettings, setShowSettings] = useState(false);
+  const [showInsights, setShowInsights] = useState(() => loadInitialSessions().length > 0);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState(null);
   const [focusPhase, setFocusPhase] = useState('work');
   const [focusSecondsLeft, setFocusSecondsLeft] = useState(0);
@@ -622,6 +652,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(focusSessions));
   }, [focusSessions]);
+
+  useEffect(() => {
+    if (focusSessions.length > 0) {
+      setShowInsights(true);
+    }
+  }, [focusSessions.length]);
 
   useEffect(() => {
     if (supportsNotifications && Notification.permission === 'default') {
@@ -1028,7 +1064,10 @@ function App() {
                 {focusPhase === 'break' ? t.breakMode.title : activeFocusTask.title}
               </h3>
               {isFocusFinished && focusPhase === 'work' ? (
-                <p className="focus-modal__subtitle">{t.focusMode.finishedHint}</p>
+                <>
+                  <p className="focus-modal__subtitle">{t.focusMode.finishedHint}</p>
+                  <p className="completion-badge">{t.focusMode.celebration(metrics.minutesToday)}</p>
+                </>
               ) : null}
 
               <div className="focus-countdown-panel">
@@ -1226,6 +1265,7 @@ function App() {
                 {t.settings.autoStartBreak}
               </label>
             </div>
+            <p className="storage-note">{t.settings.storageNote}</p>
           </section>
         ) : null}
 
@@ -1274,65 +1314,108 @@ function App() {
           </article>
         </section>
 
-        <section className="insights-grid" aria-label={t.insights.eyebrow}>
-          <article className="panel insight-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="panel-kicker">{t.insights.eyebrow}</p>
-                <h2>{t.insights.title}</h2>
-              </div>
-              <button className="ghost-button" type="button" onClick={exportTodayRecord}>
-                {t.insights.export}
+        {tasks.length === 0 ? (
+          <section className="onboarding-panel">
+            <div>
+              <p className="panel-kicker">{t.onboarding.eyebrow}</p>
+              <h2>{t.onboarding.title}</h2>
+            </div>
+            <div className="onboarding-steps">
+              {t.onboarding.steps.map((step, index) => (
+                <span key={step}>
+                  <strong>{index + 1}</strong>
+                  {step}
+                </span>
+              ))}
+            </div>
+            <div className="onboarding-actions">
+              <a className="primary-button" href="#quick-add">
+                {t.onboarding.action}
+              </a>
+              <button className="ghost-button" type="button" onClick={() => applyTemplate('paper')}>
+                {t.onboarding.template}
               </button>
             </div>
+          </section>
+        ) : null}
 
-            <div className="history-list">
-              {todaySessions.length > 0 ? (
-                todaySessions.slice(0, 5).map((session) => (
-                  <article className="history-item" key={session.id}>
-                    <span className="history-time">{formatSessionTime(session.completedAt, t.locale)}</span>
-                    <div>
-                      <strong>{session.taskTitle}</strong>
-                      <p>
-                        {session.minutes} {t.insights.minutes}
-                      </p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="empty-state compact">
-                  <p>{t.insights.empty}</p>
+        {showInsights ? (
+          <section className="insights-grid" aria-label={t.insights.eyebrow}>
+            <article className="panel insight-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-kicker">{t.insights.eyebrow}</p>
+                  <h2>{t.insights.title}</h2>
                 </div>
-              )}
-            </div>
-          </article>
-
-          <article className="panel insight-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="panel-kicker">{t.insights.weekTitle}</p>
-                <h2>{metrics.minutesToday} {t.insights.minutes}</h2>
-                <p className="panel-note">{t.insights.weekHint}</p>
+                <div className="panel-actions">
+                  <button className="ghost-button" type="button" onClick={exportTodayRecord}>
+                    {t.insights.export}
+                  </button>
+                  <button className="ghost-button" type="button" onClick={() => setShowInsights(false)}>
+                    {t.insights.hide}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="trend-chart">
-              {weeklyFocusData.map((day) => {
-                const fillHeight = day.minutes > 0 ? Math.max(12, (day.minutes / maxWeekMinutes) * 100) : 0;
-
-                return (
-                  <div className="trend-day" key={day.dateKey}>
-                    <div className="trend-bar" aria-label={`${day.label}: ${day.minutes} ${t.insights.minutes}`}>
-                      <span className="trend-fill" style={{ height: `${fillHeight}%` }} />
-                    </div>
-                    <span>{day.label}</span>
-                    <strong>{day.minutes}</strong>
+              <div className="history-list">
+                {todaySessions.length > 0 ? (
+                  todaySessions.slice(0, 5).map((session) => (
+                    <article className="history-item" key={session.id}>
+                      <span className="history-time">{formatSessionTime(session.completedAt, t.locale)}</span>
+                      <div>
+                        <strong>{session.taskTitle}</strong>
+                        <p>
+                          {session.minutes} {t.insights.minutes}
+                        </p>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-state compact">
+                    <p>{t.insights.empty}</p>
                   </div>
-                );
-              })}
+                )}
+              </div>
+            </article>
+
+            <article className="panel insight-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-kicker">{t.insights.weekTitle}</p>
+                  <h2>{metrics.minutesToday} {t.insights.minutes}</h2>
+                  <p className="panel-note">{t.insights.weekHint}</p>
+                </div>
+              </div>
+
+              <div className="trend-chart">
+                {weeklyFocusData.map((day) => {
+                  const fillHeight = day.minutes > 0 ? Math.max(12, (day.minutes / maxWeekMinutes) * 100) : 0;
+
+                  return (
+                    <div className="trend-day" key={day.dateKey}>
+                      <div className="trend-bar" aria-label={`${day.label}: ${day.minutes} ${t.insights.minutes}`}>
+                        <span className="trend-fill" style={{ height: `${fillHeight}%` }} />
+                      </div>
+                      <span>{day.label}</span>
+                      <strong>{day.minutes}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          </section>
+        ) : (
+          <section className="panel insights-collapsed">
+            <div>
+              <p className="panel-kicker">{t.insights.eyebrow}</p>
+              <h2>{t.insights.collapsedTitle}</h2>
+              <p>{t.insights.collapsedText}</p>
             </div>
-          </article>
-        </section>
+            <button className="secondary-button" type="button" onClick={() => setShowInsights(true)}>
+              {t.insights.show}
+            </button>
+          </section>
+        )}
 
         <div className="content-grid">
           <section className="panel form-panel" id="quick-add">
@@ -1394,8 +1477,11 @@ function App() {
                 </label>
               </div>
 
-              <label>
-                {t.fields.nextStep}
+              <label className="next-step-field">
+                <span className="field-title">
+                  <span>{t.fields.nextStep}</span>
+                  <small>{t.fields.nextStepGuide}</small>
+                </span>
                 <textarea
                   rows="3"
                   value={form.nextStep}
